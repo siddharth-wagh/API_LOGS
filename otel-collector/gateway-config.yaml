@@ -1,0 +1,80 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "0.0.0.0:4318"
+        cors:
+          allowed_origins: ["*"]
+          allowed_headers: ["*"]
+      grpc:
+        endpoint: "0.0.0.0:4317"
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 10000
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  resource:
+    attributes:
+      - key: monitoring.system
+        value: "opentelemetry"
+        action: upsert
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 100
+    expected_new_traces_per_sec: 10
+    policies:
+      - name: error_sampling
+        type: status_code
+        status_code: 
+          status_codes: [ERROR]
+      - name: latency_sampling
+        type: latency
+        latency: 
+          threshold_ms: 100
+      - name: probabilistic_sampling
+        type: probabilistic
+        probabilistic: 
+          sampling_percentage: 10
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlphttp:
+    endpoint: "http://jaeger:4318"
+    tls:
+      insecure: true
+  otlp/elastic:
+    endpoint: "http://logstash:8086"
+    tls:
+      insecure: true
+  elasticsearch:
+    endpoints: ["http://elasticsearch:9200"]
+    index: "traces"
+
+extensions:
+  health_check:
+    endpoint: "0.0.0.0:13133"
+  pprof:
+    endpoint: "0.0.0.0:1777"
+  zpages:
+    endpoint: "0.0.0.0:55679"
+
+service:
+  extensions: [health_check, pprof, zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource, tail_sampling]
+      exporters: [debug, otlphttp, otlp/elastic, elasticsearch]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [debug, elasticsearch]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [debug, elasticsearch] 

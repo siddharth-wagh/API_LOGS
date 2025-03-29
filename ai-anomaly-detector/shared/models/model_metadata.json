@@ -1,0 +1,18 @@
+{
+  "training_time": "2025-03-29T15:42:19.002188",
+  "training_records": 1058,
+  "feature_records": 24,
+  "features": [
+    "duration_ms_count",
+    "duration_ms_mean",
+    "duration_ms_std",
+    "duration_ms_min",
+    "duration_ms_max",
+    "duration_ms_median",
+    "is_error_sum",
+    "is_error_mean",
+    "error_rate",
+    "requests_per_minute"
+  ],
+  "anomalies_detected": 3
+}

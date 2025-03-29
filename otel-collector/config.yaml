@@ -5,13 +5,43 @@ receivers:
         endpoint: "0.0.0.0:4318"
       grpc:
         endpoint: "0.0.0.0:4317"
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu: {}
+      disk: {}
+      load: {}
+      memory: {}
+      network: {}
+      process: {}
 
 processors:
   batch:
+    timeout: 1s
+    send_batch_size: 1024
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  resource:
+    attributes:
+      - key: monitoring.system
+        value: "opentelemetry"
+        action: upsert
+      - key: deployment.environment
+        value: ${DEPLOYMENT_ENV}
+        action: upsert
+      - key: cloud.provider
+        value: ${CLOUD_PROVIDER}
+        action: upsert
 
 exporters:
   debug:
     verbosity: detailed
+  otlp:
+    endpoint: "jaeger:14250"
+    tls:
+      insecure: true
   otlphttp:
     endpoint: "http://jaeger:4318"
     tls:
@@ -20,11 +50,23 @@ exporters:
 extensions:
   health_check:
     endpoint: "0.0.0.0:13133"
+  pprof:
+    endpoint: "0.0.0.0:1777"
+  zpages:
+    endpoint: "0.0.0.0:55679"
 
 service:
-  extensions: [health_check]
+  extensions: [health_check, pprof, zpages]
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
-      exporters: [debug, otlphttp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlphttp]
+    metrics:
+      receivers: [otlp, hostmetrics]
+      processors: [memory_limiter, batch, resource]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [debug]

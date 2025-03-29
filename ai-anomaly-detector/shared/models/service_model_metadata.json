@@ -1,0 +1,29 @@
+{
+  "training_time": "2025-03-29T15:49:48.228544",
+  "training_records": 1059,
+  "feature_records": 25,
+  "features": [
+    "duration_ms_count",
+    "duration_ms_mean",
+    "duration_ms_std",
+    "duration_ms_min",
+    "duration_ms_max",
+    "duration_ms_median",
+    "is_error_sum",
+    "is_error_mean",
+    "error_rate",
+    "requests_per_minute"
+  ],
+  "anomalies_detected": 4,
+  "services": [
+    "load-generator"
+  ],
+  "endpoints": [
+    "/api/v1/orders",
+    "/start",
+    "/test",
+    "/api/v1/users",
+    "/api/v1/products",
+    "/unknown"
+  ]
+}

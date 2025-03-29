@@ -1,5 +1,5 @@
 # Use a lightweight Python image
-FROM python:3.10-slim
+FROM python:3.9-slim
 
 # Set the working directory
 WORKDIR /app
@@ -13,6 +13,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the service code
 COPY . .
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV SERVICE_NAME=service-a
+ENV OTEL_EXPORTER_OTLP_ENDPOINT="http://agent-collector:4318"
+ENV OTEL_EXPORTER_OTLP_PROTOCOL="http/protobuf"
+ENV DEPLOYMENT_ENV=production
+ENV CLOUD_PROVIDER=aws
+ENV SERVICE_REGION=us-east-1
 
 # Expose the app port
 EXPOSE 4000
