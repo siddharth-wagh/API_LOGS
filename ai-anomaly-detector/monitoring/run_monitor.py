@@ -51,7 +51,7 @@ class APIMonitor:
             logger.error(f"Error loading models: {str(e)}")
             raise
             
-    def get_recent_logs(self, minutes=5):
+    def get_recent_logs(self, minutes=10):
         """
         Get logs from the last X minutes from Elasticsearch.
         
@@ -63,36 +63,26 @@ class APIMonitor:
         """
         try:
             # Calculate time range
-            now = datetime.utcnow()
+            now = datetime.now()
             time_from = now - timedelta(minutes=minutes)
             
             # Query Elasticsearch
             query = {
-                "bool": {
-                    "must": [
-                        {
-                            "range": {
-                                "@timestamp": {
-                                    "gte": time_from.strftime("%Y-%m-%dT%H:%M:%S"),
-                                    "lte": now.strftime("%Y-%m-%dT%H:%M:%S")
-                                }
-                            }
-                        },
-                        {
-                            "exists": {
-                                "field": "response.duration_ms"
-                            }
-                        }
-                    ]
-                }
+                "query": {
+                    "match_all": {}
+                },
+                "size": 10000,
+                "sort": [
+                    {"@timestamp": {"order": "desc"}}
+                ]
             }
             
+            # Log the query for debugging
+            logger.info(f"Searching for logs in index: api-logs-2025.03.29")
+            
             result = self.es.search(
-                index="api-logs-*",
-                body={
-                    "query": query,
-                    "size": 10000  # Fetch up to 10000 records
-                }
+                index="api-logs-2025.03.29",
+                body=query
             )
             
             # Process results
@@ -208,7 +198,23 @@ class APIMonitor:
             
         try:
             # Prepare features for prediction
-            prediction_features = features_df[self.features].copy()
+            # Ensure all required features are present
+            required_features = self.features
+
+            # Add missing features with default values
+            for feature in required_features:
+                if feature not in features_df.columns:
+                    if feature == 'duration_ms_min':
+                        features_df[feature] = features_df['duration_ms_mean']
+                    elif feature == 'duration_ms_median':
+                        features_df[feature] = features_df['duration_ms_mean']
+                    elif feature == 'error_rate':
+                        features_df[feature] = features_df['is_error_mean'] * 100
+                    else:
+                        features_df[feature] = 0
+
+            # Create feature matrix
+            prediction_features = features_df[required_features].copy()
             
             # Scale features
             scaled_features = self.scaler.transform(prediction_features)
@@ -225,7 +231,7 @@ class APIMonitor:
             anomalies_df = features_df[features_df["anomaly"] == -1].copy()
             
             # Add current timestamp
-            anomalies_df["detection_time"] = datetime.utcnow().isoformat()
+            anomalies_df["detection_time"] = datetime.now().isoformat()
             
             anomaly_count = len(anomalies_df)
             logger.info(f"Detected {anomaly_count} anomalies out of {len(features_df)} endpoints")

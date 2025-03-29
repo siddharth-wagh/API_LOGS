@@ -17,6 +17,72 @@ ai-anomaly-detector/
 └── main.py              # Main entry point
 ```
 
+## Complete Step-by-Step Guide
+
+To quickly get started with this API anomaly detection system, follow these steps:
+
+### 1. Ensure Prerequisites
+
+Make sure you have:
+- Python 3.7+ installed
+- Required Python packages: `pip install elasticsearch pandas numpy scikit-learn matplotlib joblib`
+- Running ELK stack (Elasticsearch, Logstash, Kibana)
+
+### 2. Generate Test Data (Optional)
+
+If you don't have actual API logs yet, you can generate test data:
+
+```bash
+# Generate test traffic with some anomalies
+python load-test.py
+```
+
+### 3. Train the Anomaly Detection Model
+
+```bash
+# Train the model on data from Elasticsearch
+python ai-anomaly-detector/training/train_model.py
+```
+
+This will:
+- Connect to Elasticsearch
+- Extract API logs data
+- Create time-based features
+- Train an Isolation Forest model
+- Save the model to the `models/` directory
+- Generate visualizations
+
+### 4. Run the Monitoring Service
+
+```bash
+# Start continuous monitoring for anomalies
+python ai-anomaly-detector/monitoring/run_monitor.py
+```
+
+This will:
+- Load the trained model
+- Check for new logs every 60 seconds
+- Detect anomalies based on response time and error rates
+- Send alerts when anomalies are detected
+- Store anomaly records in the `api-anomalies` index in Elasticsearch
+
+### 5. View Anomaly Results
+
+Access the results in any of these ways:
+- Open Kibana: http://localhost:5601 
+- Create an index pattern for `api-anomalies` in Kibana
+- Query Elasticsearch directly:
+  ```bash
+  Invoke-RestMethod -Uri "http://localhost:9200/api-anomalies/_search" -Method GET
+  ```
+
+### 6. View API Logs
+
+To see the raw API logs:
+- Open Kibana: http://localhost:5601
+- Create an index pattern for `api-logs-*` 
+- Use the Discover tab to view and filter logs
+
 ## Logical Architecture
 
 This product is designed to work with distributed microservices environments. It connects to your ELK Stack, which may be centralized even when your services are distributed across multiple clouds or data centers.
@@ -92,10 +158,11 @@ The testing module (`testing/generate_anomalies.py`) allows you to generate arti
 To connect to different ELK deployments:
 
 1. Edit `data_collection/inject_service_data.py` and update the Elasticsearch connection settings:
+
    ```python
    # For local development
    es = Elasticsearch(["http://localhost:9200"])
-   
+
    # For production environment
    # es = Elasticsearch(
    #     ["https://your-elk-cluster:9200"],
@@ -105,6 +172,7 @@ To connect to different ELK deployments:
    ```
 
 2. For the monitoring service, update the connection settings in `monitoring/monitor_services.py`.
+
 
 ## Documentation
 

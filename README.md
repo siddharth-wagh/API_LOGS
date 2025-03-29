@@ -276,4 +276,85 @@ During testing, our AI product successfully detected anomalies in the target sys
 
 ## License
 
-[MIT License](LICENSE) 
+[MIT License](LICENSE)
+
+# API Observability Platform with ML-based Anomaly Detection
+
+This project implements a complete API observability platform with real-time anomaly detection capabilities. The system uses the ELK stack (Elasticsearch, Logstash, Kibana) along with OpenTelemetry collectors to monitor distributed microservices.
+
+## Running the Complete System
+
+To run the entire system including all services, ELK stack, and anomaly detection:
+
+```bash
+# Step 1: Start all microservices and the ELK stack
+docker-compose up -d
+
+# Step 2: Wait for the services to initialize
+Start-Sleep -Seconds 30  # PowerShell
+# OR
+sleep 30  # Linux/Mac
+
+# Step 3: Generate test traffic to create both normal patterns and anomalies
+python load-test.py &
+
+# Step 4: Train the anomaly detection model using data from Elasticsearch
+python ai-anomaly-detector/training/train_model.py
+
+# Step 5: Start the anomaly detection monitoring service
+python ai-anomaly-detector/monitoring/run_monitor.py &
+
+# Step 6: Open Kibana to view API logs and detected anomalies
+Start-Process "http://localhost:5601"  # PowerShell
+# OR
+xdg-open http://localhost:5601  # Linux
+# OR
+open http://localhost:5601  # Mac
+```
+
+## Components
+
+### Infrastructure
+- **Elasticsearch**: Stores API logs and anomaly detection results
+- **Logstash**: Collects and processes logs from services
+- **Kibana**: Visualizes logs and anomalies
+
+### Microservices
+- **service-a**: Example REST API service
+- **service-b**: Secondary service that communicates with service-a
+
+### Telemetry Collection
+- **agent-collector**: OpenTelemetry Collector for local service telemetry
+- **gateway-collector**: Central collector that aggregates telemetry
+
+### Anomaly Detection
+- **ai-anomaly-detector**: ML-based system for detecting API anomalies
+  - Uses Isolation Forest algorithm to detect abnormal response times and error rates
+  - Processes time-series data from API logs
+  - Sends alerts when anomalies are detected
+
+## Monitoring and Alerting
+
+The anomaly detection system monitors for:
+1. Abnormal response times
+2. Unusual error rates
+3. Traffic pattern changes
+
+When an anomaly is detected, it:
+1. Logs a warning with details about the anomaly
+2. Stores the anomaly record in Elasticsearch
+3. Makes the anomaly available for visualization in Kibana
+
+## Accessing Results
+
+### View API Logs
+- In Kibana, create an index pattern for `api-logs-*`
+- Use the Discover tab to explore raw API logs
+
+### View Detected Anomalies
+- In Kibana, create an index pattern for `api-anomalies`
+- Create visualizations to display anomalies over time
+
+## For More Details
+
+See the full documentation in the `ai-anomaly-detector` directory. 
